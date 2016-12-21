@@ -300,8 +300,8 @@ define([
 
 		_setSiblingViewsInMotion: function(/*Boolean*/inMotion){
 			var inMotionAttributeValue = inMotion ? "true" : false;
-			var parent = this.domNode.parentNode;
-			if(parent){
+			var parent;
+			if(this.domNode && (parent = this.domNode.parentNode) ){
 				parent.setAttribute("data-dojox-mobile-swapview-inmotion", inMotionAttributeValue);
 			}
 		},

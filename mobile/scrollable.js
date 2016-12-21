@@ -460,6 +460,7 @@ define([
 				this._conn = [];
 				this._conn.push(connect.connect(win.doc, touch.move, this, "onTouchMove"));
 				this._conn.push(connect.connect(win.doc, touch.release, this, "onTouchEnd"));
+				this._conn.push(connect.connect(win.doc, touch.cancel, this, "onTouchEnd"));
 			}
 
 			this._aborted = false;

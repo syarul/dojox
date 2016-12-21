@@ -83,6 +83,10 @@ var clz = declare(/*===== "dojox.gesture.tap", =====*/Base, {
 			return;
 		}
 		var target = e.target;
+        if (target.nodeType !== 1)
+        {
+            target = target.parentNode;
+        }
 		this._initTap(data, e);
 		data.tapTimeOut = setTimeout(lang.hitch(this, function(){
 			if(this._isTap(data, e)){
@@ -91,6 +95,19 @@ var clz = declare(/*===== "dojox.gesture.tap", =====*/Base, {
 			delete data.context;
 		}), this.holdThreshold);
 	},
+    move: function(data, e){
+        if (data.context)
+        {
+            data.context.x = e.screenX;
+            data.context.y = e.screenY;
+        }
+    },
+    
+    cancel: function()
+    {
+        this.release.apply(this, arguments);
+    },
+    
 	release: function(/*Object*/data, /*Event*/e){
 		// summary:
 		//		Overwritten, fire matched 'tap' or 'tap.doubletap' during touchend

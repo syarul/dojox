@@ -53,6 +53,7 @@ define([
 		},
 
 		setQuery: function(/*String*/query, /*Object*/queryOptions){
+            this.set("query", query);
 			this._setQuery(query, queryOptions);
 			return this.refresh();
 		},
@@ -70,10 +71,6 @@ define([
 			if(!this.store){ return null; }
 			var _this = this;
 			var promise = this.store.query(this.query, this.queryOptions);
-			Deferred.when(promise, function(results){
-				if(results.items){
-					results = results.items; // looks like dojo/data style items array
-				}
 				if(promise.observe){
 					if(_this._observe_h){
 						_this._observe_h.remove();
@@ -97,9 +94,9 @@ define([
 								// item modified
 								// if onAdd is not defined, we are "bug compatible" with 1.8 and we do nothing.
 								// TODO remove test in 2.0
-								if(_this.onAdd){
+								// if(_this.onAdd){
 									_this.onUpdate(object, newIndex);
-								}
+								// }
 							}
 						}else if(newIndex != -1){
 							// item added
@@ -113,6 +110,10 @@ define([
 							}
 						}
 					}, true); // we want to be notified of updates
+				}
+			Deferred.when(promise, function(results){
+				if(results.items){
+					results = results.items; // looks like dojo/data style items array
 				}
 				_this.onComplete(results);
 			}, function(error){

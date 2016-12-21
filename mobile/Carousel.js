@@ -4,6 +4,7 @@ define([
 	"dojo/_base/declare",
 	"dojo/_base/event",
 	"dojo/_base/lang",
+    "dojo/Deferred",
 	"dojo/sniff",
 	"dojo/dom-class",
 	"dojo/dom-construct",
@@ -17,9 +18,8 @@ define([
 	"./PageIndicator",
 	"./SwapView",
 	"require",
-	"dojo/has!dojo-bidi?dojox/mobile/bidi/Carousel",
-	"dojo/i18n!dojox/mobile/nls/messages"
-], function(array, connect, declare, event, lang, has, domClass, domConstruct, domStyle, registry, Contained, Container, WidgetBase, lazyLoadUtils, CarouselItem, PageIndicator, SwapView, require, BidiCarousel, messages){
+	"dojo/has!dojo-bidi?dojox/mobile/bidi/Carousel"
+], function(array, connect, declare, event, lang, Deferred, has, domClass, domConstruct, domStyle, registry, Contained, Container, WidgetBase, lazyLoadUtils, CarouselItem, PageIndicator, SwapView, require, BidiCarousel){
 
 	// module:
 	//		dojox/mobile/Carousel
@@ -87,6 +87,8 @@ define([
 		//		If true, an item can be selected by clicking it.
 		selectable: true,
 
+        selectedItem: null,
+
 		/* internal properties */	
 		
 		// baseClass: String
@@ -131,7 +133,8 @@ define([
 				if(!this.title){
 					this.title = "&nbsp;";
 				}
-				this.piw = new PageIndicator();
+				this.piw = (typeof this.pageIndicator !== "boolean") ? 
+                        new require(this.pageIndicator)() : new PageIndicator();
 				this.headerNode.appendChild(this.piw.domNode);
 			}
 
@@ -186,6 +189,10 @@ define([
 			var idx = 0, i, len;
 			var h = this.domNode.offsetHeight - (this.headerNode ? this.headerNode.offsetHeight : 0);
 			var m = (has("ie") < 10) ? 5 / this.numVisible - 1 : 5 / this.numVisible;
+//            if (h === 0)
+//            {
+//                this.numVisible = 0;
+//            }
 			var node, item;
 			array.forEach(this.getChildren(), function(view){
 				if(!(view instanceof SwapView)){ return; }
@@ -205,6 +212,7 @@ define([
 					domClass.add(node, "mblCarouselSlot");
 					idx++;
 				}
+                view.resize();
 			}, this);
 
 			if(this.piw){
@@ -226,7 +234,7 @@ define([
 		},
 
 		fillPages: function(){
-			array.forEach(this.getChildren(), function(child, i){
+            array.forEach(this.getChildren(), function(child, i){
 				var s = "";
 				var j;
 				for(j = 0; j < this.numVisible; j++){
@@ -239,6 +247,7 @@ define([
 						if(type){
 							props = this.store.getValue(item, "props");
 							mixins = this.store.getValue(item, "mixins");
+                            events = this.store.getValue(item, "events");
 						}else{
 							type = "dojox.mobile.CarouselItem";
 							array.forEach(["alt", "src", "headerText", "footerText"], function(p){
@@ -276,9 +285,13 @@ define([
 					child.destroyRecursive();
 				}
 			});
-			this.selectedItem = null;
+            if (this.numVisible === 0)
+            {
+                return;
+            }
+			this.set("selectedItem", null);
 			this.items = items;
-			var nPages = Math.ceil(items.length / this.numVisible),
+			var nPages = this.numVisible ? Math.ceil(items.length / this.numVisible) : 0,
 				i, h = this.domNode.offsetHeight - this.headerNode.offsetHeight,
 				idx = this.selectedItemIndex === -1 ? 0 : this.selectedItemIndex,
 				pg = Math.floor(idx / this.numVisible); // current page
@@ -352,7 +365,7 @@ define([
 			//		Returns the index of an item widget at a given index.
 			if(index === -1){ return null; }
 			var view = this.getChildren()[Math.floor(index / this.numVisible)];
-			return view.getChildren()[index % this.numVisible];
+			return view && view.getChildren()[index % this.numVisible];
 		},
 
 		onPrevBtnClick: function(/*Event*/ /*===== e =====*/){
@@ -404,7 +417,7 @@ define([
 				itemWidget = this.getItemWidgetByIndex(itemWidget);
 			}
 			if(this.selectable){
-				if(this.selectedItem){
+				if(this.selectedItem && ( ! this.selectedItem._beingDestroyed ) ){
 					this.selectedItem.set("selected", false);
 					domClass.remove(this.selectedItem.domNode, "mblCarouselSlotSelected");
 				}
@@ -412,7 +425,7 @@ define([
 					itemWidget.set("selected", true);
 					domClass.add(itemWidget.domNode, "mblCarouselSlotSelected");
 				}
-				this.selectedItem = itemWidget;
+				this.set("selectedItem", itemWidget);
 			}
 		},
 
@@ -437,6 +450,7 @@ define([
 					}
 				});
 				view._instantiated = true;
+//                view.resize();
 			}
 		},
 
@@ -446,10 +460,20 @@ define([
 			if(view.getParent() !== this){ return; }
 			if(this.currentView.nextView(this.currentView.domNode) === view){
 				this.instantiateView(view.nextView(view.domNode));
-			}else{
+			}else if(this.currentView.previousView(this.currentView.domNode) === view){
 				this.instantiateView(view.previousView(view.domNode));
 			}
-			this.currentView = view;
+            else {
+                this.instantiateView(view);
+                this.instantiateView(view.nextView(view.domNode));
+                this.instantiateView(view.previousView(view.domNode));
+            }
+            this.set('currentView', view);
+//            this.currentView = view;
+            if (this._goToDeferred)
+            {
+                this._goToDeferred.resolve(true);
+            }
 		},
 
 		_setTitleAttr: function(/*String*/title){
@@ -457,7 +481,34 @@ define([
 			//		private
 			this.titleNode.innerHTML = this._cv ? this._cv(title) : title;
 			this._set("title", title);
+		},
+                
+        goToItem: function(itemIdx)
+        {
+            var view = this.getChildren()[Math.floor(itemIdx / this.numVisible)];
+            if (view)
+            {
+                if (this._goToDeferred && !this._goToDeferred.isFulfilled())
+                {
+                    this._goToDeferred.resolve(false);
 		}
+                this._goToDeferred = new Deferred();
+                
+                var activeView = view.getShowingView();
+                var currentIdx = activeView.getIndexInParent();
+                var targetIdx = view.getIndexInParent();
+                var dir = ( targetIdx - currentIdx > 0 ) ? 1 : -1;
+
+                if (targetIdx === currentIdx)
+                {
+                    return true;
+                }
+                activeView.goTo(dir, view.id);
+//                this.currentView.goTo(dir, view.id);
+                return this._goToDeferred.promise;
+            }
+            return false;
+        }
 	});
 	
 	Carousel.ChildSwapViewProperties = {

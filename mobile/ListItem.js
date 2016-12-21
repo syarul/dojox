@@ -288,8 +288,9 @@ define([
 		_onTouchStart: function(e){
 			// tags:
 			//		private
-			if(e.target.getAttribute("preventTouch") || // TODO: Remove the non-HTML5-compliant attribute in 2.0
-				e.target.getAttribute("data-mobile-prevent-touch") ||
+			if( ( e.target.getAttribute && (
+                  e.target.getAttribute("preventTouch") || // TODO: Remove the non-HTML5-compliant attribute in 2.0
+				  e.target.getAttribute("data-mobile-prevent-touch") ) ) ||
 				(registry.getEnclosingWidget(e.target) || {}).preventTouch){
 				return;
 			}

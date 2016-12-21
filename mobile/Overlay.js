@@ -46,10 +46,19 @@ define([
 		 		vp.t -= scrollableParent.getPos().y;
 		 	}
 		 	// reposition if needed 
-		 	if((popupPos.y+popupPos.h) != vp.h // TODO: should be a has() test for position:fixed not scrolling
+            var viewHeight = scrollableParent ? scrollableParent.domNode.clientHeight : vp.h;
+		 	if((popupPos.y+popupPos.h) != viewHeight // TODO: should be a has() test for position:fixed not scrolling
 				|| (domStyle.get(this.domNode, 'position') != 'absolute' && has('android') < 3)){ // android 2.x supports position:fixed but child transforms don't persist
-				popupPos.y = vp.t + vp.h - popupPos.h;
-				domStyle.set(this.domNode, { position: "absolute", top: popupPos.y + "px", bottom: "auto" });
+				popupPos.y = viewHeight - popupPos.h;
+                if (has('ios'))
+                {
+                    popupPos.y += vp.t;
+                }
+                /* replace 'position: "absolute"' with 'position: "fixed"' 
+                 * since "absolute" positioning causes the overlay positioning 
+                 * to be incorrect on newer android versions
+                 */
+				domStyle.set(this.domNode, { position: "fixed", top: popupPos.y + "px", bottom: "auto" });
 			}
 			return popupPos;
 		},

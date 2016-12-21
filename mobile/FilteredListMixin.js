@@ -211,6 +211,7 @@ define([
 						// If the list is backed by a dojox/mobile/_StoreListMixin, it
 						// has a labelProperty which is given precedence. 
 						searchAttr: this.labelProperty ? this.labelProperty : "label",
+                        query: this.query,
 						ignoreCase: true,
 						incremental: true,
 						onSearch: lang.hitch(this, "_onFilter"),
@@ -257,6 +258,11 @@ define([
 					}
 				}));
 			}
+            
+            this.watch("query", function(attrib, oldQuery, newQuery)
+            {
+                this._filterBox.set("query", newQuery);
+            });
 			
 			if(!this.store){
 				this._createStore(this._initStore);
@@ -282,7 +288,7 @@ define([
 				this._filterBox.set("placeHolder", placeHolder);
 			}
 		},
-		
+        
 		getFilterBox: function(){
 			// summary:
 			//		Returns the dojox/mobile/SearchBox widget used for entering the filtering criteria.

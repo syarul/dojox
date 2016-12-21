@@ -27,6 +27,13 @@ define(["dojo/_base/declare", "dojo/_base/lang", "dojo/Stateful"],
 				}
 			}
 		},
+        
+        destroy: function(args)
+        {
+            this._beingDestroyed = true;
+            this.inherited(arguments);
+        },
+        
 		addInvalidatingProperties: function(/*String[]*/ properties){
 			// summary:
 			//		Add properties to the watched properties to trigger invalidation. This method must be called in
@@ -39,7 +46,7 @@ define(["dojo/_base/declare", "dojo/_base/lang", "dojo/Stateful"],
 		invalidateRendering: function(){
 			// summary:
 			//		Invalidating the rendering for the next executation frame.
-			if(!this.invalidRendering){
+			if(!this.invalidRendering && !this._beingDestroyed){
 				this.invalidRendering = true;
 				setTimeout(lang.hitch(this, this.validateRendering), 0);
 			}
@@ -49,7 +56,7 @@ define(["dojo/_base/declare", "dojo/_base/lang", "dojo/Stateful"],
 			//		Immediately validate the rendering if it has been invalidated. You generally do not call that method yourself.
 			// tags:
 			//		protected
-			if(this.invalidRendering){
+			if(this.invalidRendering && !this._beingDestroyed){
 				this.refreshRendering();
 				this.invalidRendering = false;
 			}

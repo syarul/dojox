@@ -70,6 +70,8 @@ define(["./_base", "dojo/_base/lang", "dojo/_base/declare", "dojo/_base/kernel",
 					return uid;
 				}
 			}
+            
+            this._beingDestroyed = false;
 		},
 		
 		destroy: function(){
@@ -83,6 +85,7 @@ define(["./_base", "dojo/_base/lang", "dojo/_base/declare", "dojo/_base/kernel",
 				this.rawNode.__gfxObject__ = null;
 			}
 			this.rawNode = null;
+            this._beingDestroyed = true;
 		},
 	
 		// trivial getters
@@ -660,11 +663,13 @@ define(["./_base", "dojo/_base/lang", "dojo/_base/declare", "dojo/_base/kernel",
 			this._nodes = [];
 			// the list of events to be detached in the case of destruction
 			this._events = [];
+            this._beingDestroyed = false;
 		},
 		destroy: function(){
 			// summary:
 			//		destroy all relevant external resources and release all
 			//		external references to make this object garbage-collectible
+            this._beingDestroyed = true;
 			arr.forEach(this._nodes, domConstruct.destroy);
 			this._nodes = [];
 			arr.forEach(this._events, function(h){ if(h){ h.remove(); } });

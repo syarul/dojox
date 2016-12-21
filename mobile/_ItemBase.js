@@ -342,7 +342,7 @@ define([
 				// so as not to make selection when the user flicks on ScrollableView
 				this._selTimer = this.defer(function(){
 					this.set("selected", true);
-				}, 100);
+				}, 500);
 			}else{
 				this.set("selected", true);
 			}

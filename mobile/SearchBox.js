@@ -54,7 +54,7 @@ define([
 			this.inherited(arguments);
 			this.textbox.removeAttribute('incremental'); // only want onsearch to fire for ENTER and cancel
 			if(!this.textbox.hasAttribute('results')){
-				this.textbox.setAttribute('results', '0'); // enables webkit search decoration
+				// this.textbox.setAttribute('results', '0'); // enables webkit search decoration
 			}
 			if(has("ios") < 5){
 				domClass.add(this.domNode, 'iphone4'); // cannot click cancel button after focus so just remove it
